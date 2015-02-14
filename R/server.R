@@ -4,42 +4,18 @@ source('./ext/logistic.R')
 
 options(digits.secs=4)
 
+
 # Define server logic to manage learning about logistic regression
 shinyServer(function(input, output) {
   
   
-  data_sub1 <- reactive({
-    if(!('fixed_seed' %in% input$options)){
-      probability <- 1-input$bias
-      the_bias <- log((1/probability) - 1)
-      input$new_data  
-      isolate({  # Create unreplicable random seed
-        the_seed <- substr(as.POSIXlt(Sys.time(), "HST"), 22, 24)
-        the_seed <- strsplit(the_seed, NULL)[[1]]
-        the_seed <- rev(the_seed)
-        the_seed <- as.integer(paste(the_seed, collapse=''))
-        plot_data <- logitdat(vars = 1, weights=input$effect_size, n = input$sample_size, bias=the_bias, fixed_seed=the_seed)   
-        return(plot_data)
-      })
-    }
-  })
-  
-  data_sub2 <- reactive({
-    if('fixed_seed' %in% input$options){
-      probability <- 1-input$bias
-      the_bias <- log((1/probability) - 1)
-      the_seed <- 666  # Pass replicable random seed
-      plot_data <- logitdat(vars = 1, weights=input$effect_size, n = input$sample_size, bias=the_bias, fixed_seed=the_seed)   
-    }
-  })
-  
-  
   data_reactive <- reactive({
-    if('fixed_seed' %in% input$options){
-      return(data_sub2())
-    } else if (!('fixed_seed' %in% input$options)){
-      return(data_sub1())
+    if ('fixed_seed' %in% input$options){  # Replicable data
+      plot_data <- logitdat(vars = 1, weights=input$effect_size, n = input$sample_size, bias=input$the_bias, replicable=T)   
+    } else {  # Unique data
+      plot_data <- logitdat(vars = 1, weights=input$effect_size, n = input$sample_size, bias=input$the_bias, replicable=T)   
     }
+    return(plot_data)
   })
   
   
@@ -95,8 +71,6 @@ shinyServer(function(input, output) {
     glm_output <- glm(y ~ x1, data=dataset, family=binomial(link="logit"))
     return(glm_output)
   })
-  
-  
   
   
   # Produce a summary of the Logistic Regression analysis

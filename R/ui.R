@@ -6,7 +6,7 @@ shinyUI(fluidPage(
   sidebarLayout(
     sidebarPanel(
       
-      sliderInput(inputId = 'bias', 
+      sliderInput(inputId = 'the_bias', 
                   label = h4('Base probability'), 
                   min = 0.1, max = 0.9, value = 0.5, step = .05,
                   ticks = FALSE, animate = FALSE),
@@ -39,10 +39,7 @@ shinyUI(fluidPage(
                                      "Jitter points" = 'jitter',
                                      "Mark intercept" = 'intercept',
                                      "Replicable results" = 'fixed_seed'),
-                         selected = NULL),
-      
-      conditionalPanel(condition= "input.options.indexOf('fixed_seed') == -1",  # Scary JS code for testin element
-                       actionButton(inputId='new_data', label='Generate New Data'))
+                         selected = NULL)
     ), 
     
     mainPanel( plotOutput("plot_output"),
