@@ -1,5 +1,6 @@
 library(shiny)
 library(ggplot2)
+library(rbokeh)
 source('./ext/logistic.R')
 
 options(digits.secs=4)
@@ -18,52 +19,48 @@ shinyServer(function(input, output) {
     return(plot_data)
   })
   
+
   
-  output$plot_output <- renderPlot({
-    p <- ggplot(data_reactive(), aes(x=x1, y=y))
-    
-    logistic_se <- F
-    linear_se <- F
-    if('linear_se' %in% input$modeltype){
-      linear_se <- T      
-    }
-    if('logistic_se' %in% input$modeltype){
-      logistic_se <- T      
-    }
+  output$plot_bokeh <- renderRbokeh({
+    theData <- data_reactive()
+    logistic_model <- glm(y ~ x1, data=theData, family=binomial(link="logit"))
     
     if('jitter' %in% input$options){
-      p <- p + geom_point(position = position_jitter(w = 0, h = 0.05))
+      p <- figure(xlim = c(-3, 3), ylim=c(-0.3, 1.3), logo='None',
+                  xlab = 'Predictor',
+                  ylab='Pr(Disease)') %>%
+        ly_points(jitter(x1, factor=.2), jitter(y, factor=.2), data=theData, size=5) 
     } else{
-      p <- p + geom_point()
+      p <- figure(xlim = c(-3, 3), ylim=c(-0.3, 1.3), logo='None',
+                  xlab = 'Predictor',
+                  ylab='Pr(Disease)') %>%
+        ly_points(x1, y, data=theData, size=7)
     }
     
-    p <- p + scale_colour_discrete(name  ="Disease",
-                                   breaks=c("0", "1"),
-                                   labels=c("No Disease", "Disease"))
     
     if("linear" %in% input$modeltype){
-      p <- p + geom_smooth(method=lm, se=linear_se, color='blue')
+      linear_model <- lm(y ~ x1, data=theData)
+      p <- ly_abline(p, linear_model, col='Purple', width=1.5)
     }
     if("logistic" %in% input$modeltype){
-      p <- p + stat_smooth(method="glm", family="binomial", se=logistic_se, color='red')
+      predict_x1 <- seq(-3, 3, 0.05)
+      predictDF <- data.frame(cbind(y=rep(0, 121), x1 = predict_x1))
+      predict_y <- invlogit(as.numeric(predict(logistic_model, newdata = predictDF)))
+      p <- p %>% ly_lines(predict_x1, predict_y, col='Blue', width=2)
     }
     if("loess" %in% input$modeltype){
-      p <- p + geom_smooth(se=FALSE, color='purple')
+      p <- p %>% ly_lines(lowess(theData, f=3/4), col='Red', width=1.5)
     }
-    
-    p <- p + xlim(-3.5, 3.5) + ylim(-.3, 1.3)
-    
-    p <- p +  ylab('Pr(Disease)') + xlab('Predictor')
-    
-    if('intercept' %in% input$options){
-      intercept <- 1/(1 + exp(-(data_analysis()$coef[1])))
-      tmpDF <- data.frame(x=0, y=intercept)
-      p <- p + geom_point(data=tmpDF,aes(x=x,y=y),colour="dark green",size=4)
-    }
+
+     if('intercept' %in% input$options){
+       print('Intercept')
+       intercept <- as.numeric(1/(1 + exp(-(logistic_model$coef[1]))))
+       p <- p %>% ly_points(x=0, y=intercept, color='Red', hover='intercept', glyph='asterisk')
+     }
     
     p
+    # rbokeh:::plot.BokehFigure(p)
   })
-  
   
   # Generate the analysis of the Logistic Regression
   data_analysis <- reactive({
@@ -73,11 +70,6 @@ shinyServer(function(input, output) {
   })
   
   
-  # Produce a summary of the Logistic Regression analysis
-  output$summary <- renderPrint({
-    if('summary_output' %in% input$options){
-      summary(data_analysis())
-    }
-  })
+  
   
 })
