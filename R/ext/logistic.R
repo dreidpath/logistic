@@ -44,9 +44,15 @@ logitdat <- function(vars = 1, weights, n = 1000, bias=0, replicable=T) {
     weights <- rep(1, vars)
   }
   
+  bias <- -log(1/bias - 1) # Convert
   z <- bias + rowSums(t(t(as.matrix(logit_data)) * weights)) # linear combination with a bias
   pr <- 1/(1 + exp(-z))  # pass through an inv-logit function
   logit_data['y'] <- rbinom(n, 1, pr)  # bernoulli response variable
   return(logit_data)
 }
 
+
+invlogit <- function(x){
+  # A function to calculate the inverse of the logit
+  exp(x)/(1+exp(x))
+}
