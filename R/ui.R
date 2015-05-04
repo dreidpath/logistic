@@ -1,5 +1,5 @@
 # ui.R
-
+library(rbokeh)
 shinyUI(fluidPage(
   titlePanel("Logistic Regression"),
   
@@ -42,7 +42,7 @@ shinyUI(fluidPage(
                          selected = NULL)
     ), 
     
-    mainPanel( plotOutput("plot_output"),
+    mainPanel( rbokehOutput("plot_bokeh"),
                conditionalPanel(condition="input.options.indexOf('summary_output') != -1",
                                 verbatimTextOutput("summary"))
     ))))
